@@ -77,3 +77,4 @@ const generatePhotos = () => {
 
   return photos;
 };
+generatePhotos();
