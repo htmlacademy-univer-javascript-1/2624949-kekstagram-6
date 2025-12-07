@@ -9,12 +9,53 @@ const commentsLoader = bigPicture.querySelector('.comments-loader');
 const cancelButton = bigPicture.querySelector('.big-picture__cancel');
 
 // Скрываем блоки, с которыми работаем позже
-commentCountBlock.classList.add('hidden');
-commentsLoader.classList.add('hidden');
+commentCountBlock.classList.remove('hidden');
+commentsLoader.classList.remove('hidden');
+
+let currentComments = [];
+let shownCount = 0;
+const STEP = 5;
+
+const onCommentsLoaderClick = () => {
+  renderCommentsPortion();
+};
+
+// Функция отрисовки следующей порции комментариев
+function renderCommentsPortion() {
+  const fragment = document.createDocumentFragment();
+  const start = shownCount;
+  const end = Math.min(shownCount + STEP, currentComments.length);
+
+  for (let i = start; i < end; i++) {
+    const { avatar, name, message } = currentComments[i];
+    const li = document.createElement('li');
+    li.className = 'social__comment';
+    li.innerHTML = `
+      <img class="social__picture" src="${avatar}" alt="${name}" width="35" height="35">
+      <p class="social__text">${message}</p>
+    `;
+    fragment.appendChild(li);
+  }
+
+  socialComments.appendChild(fragment);
+  shownCount = end;
+
+  // Обновляем счётчик: "5 из 125 комментариев"
+  // Первый текстовый узел — это "5 из ", он изменяется через firstChild
+  commentCountBlock.firstChild.textContent = `${shownCount} из `;
+
+  // Скрываем кнопку, если всё показано
+  if (shownCount >= currentComments.length) {
+    commentsLoader.classList.add('hidden');
+  }
+}
 
 let escHandler = null;
 
 const openBigPicture = (photo) => {
+  currentComments = photo.comments;
+  shownCount = 0;
+
   // 1. Изображение
   bigPictureImg.src = photo.url;
   bigPictureImg.alt = photo.description;
@@ -30,15 +71,16 @@ const openBigPicture = (photo) => {
 
   // 5. Очищаем и рендерим комментарии
   socialComments.innerHTML = '';
-  photo.comments.forEach((comment) => {
-    const li = document.createElement('li');
-    li.className = 'social__comment';
-    li.innerHTML = `
-      <img class="social__picture" src="${comment.avatar}" alt="${comment.name}" width="35" height="35">
-      <p class="social__text">${comment.message}</p>
-    `;
-    socialComments.appendChild(li);
-  });
+  commentCountBlock.firstChild.textContent = '0 из ';
+  // Показываем кнопку (на случай, если она была скрыта ранее)
+  commentsLoader.classList.remove('hidden');
+
+  // Убираем старый обработчик и вешаем новый
+  commentsLoader.removeEventListener('click', onCommentsLoaderClick);
+  commentsLoader.addEventListener('click', onCommentsLoaderClick);
+
+  // Рендерим первую порцию
+  renderCommentsPortion();
 
   // 6. Показываем окно
   bigPicture.classList.remove('hidden');
