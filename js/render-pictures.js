@@ -1,3 +1,6 @@
+// eslint-disable-next-line no-unused-vars
+import { openBigPicture } from './big-picture';
+
 // Временные данные
 const picturesData = [
   {
