@@ -1,47 +1,33 @@
-// eslint-disable-next-line no-unused-vars
-import { openBigPicture } from './big-picture';
+// render-pictures.js
 
-// Временные данные
-const picturesData = [
-  {
-    url: 'https://picsum.photos/182/182?random=1',
-    description: 'Первое изображение',
-    likes: 150,
-    comments: 20
-  },
-  {
-    url: 'https://picsum.photos/182/182?random=2',
-    description: 'Второе изображение',
-    likes: 89,
-    comments: 5
-  },
-  {
-    url: 'https://picsum.photos/182/182?random=3',
-    description: 'Третье изображение',
-    likes: 230,
-    comments: 42
-  }
-];
+import { openFullPicture } from './render-full-picture.js';
 
-// Функция отрисовки миниатюр
-const renderThumbnails = (pictures) => {
+export const renderThumbnails = (photos) => {
   const container = document.querySelector('.pictures');
   const template = document.querySelector('#picture').content;
-  const fragment = new DocumentFragment();
 
-  pictures.forEach(({ url, description, likes, comments }) => {
-    const pictureElement = template.cloneNode(true);
+  // Удаляем старые миниатюры
+  const oldPictures = container.querySelectorAll('.picture');
+  oldPictures.forEach((el) => el.remove());
 
-    pictureElement.querySelector('.picture__img').src = url;
-    pictureElement.querySelector('.picture__img').alt = description;
-    pictureElement.querySelector('.picture__likes').textContent = likes;
-    pictureElement.querySelector('.picture__comments').textContent = comments;
+  // Добавляем новые
+  photos.forEach((photo) => {
+    const clone = template.cloneNode(true);
+    const link = clone.querySelector('.picture');
+    const img = clone.querySelector('.picture__img');
+    const comments = clone.querySelector('.picture__comments');
+    const likes = clone.querySelector('.picture__likes');
 
-    fragment.appendChild(pictureElement);
+    img.src = photo.url;
+    img.alt = photo.description || 'Фотография';
+    comments.textContent = `${photo.comments.length} коммент.`;
+    likes.textContent = `${photo.likes} лайк.`;
+
+    link.addEventListener('click', (evt) => {
+      evt.preventDefault();
+      openFullPicture(photo);
+    });
+
+    container.append(clone); // ← правильно, без мусора
   });
-
-  container.appendChild(fragment);
 };
-
-// Экспортируем функцию для использования в основном модуле
-export { renderThumbnails, picturesData };

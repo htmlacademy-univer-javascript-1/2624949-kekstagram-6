@@ -1,7 +1,12 @@
+// main.js
+
 import { generatePhotos } from './data.js';
+import { renderThumbnails } from './render-pictures.js';
+import { initUploadForm } from './upload-form.js';
 
-generatePhotos();
+// Сначала — миниатюры
+const pictures = generatePhotos();
+renderThumbnails(pictures);
 
-import { renderThumbnails, picturesData } from './render-pictures.js';
-
-renderThumbnails(picturesData);
+// Потом — форма
+initUploadForm();
