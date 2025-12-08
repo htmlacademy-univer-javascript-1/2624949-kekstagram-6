@@ -1,16 +1,12 @@
-// render-pictures.js
-
 import { openFullPicture } from './render-full-picture.js';
 
 export const renderThumbnails = (photos) => {
   const container = document.querySelector('.pictures');
   const template = document.querySelector('#picture').content;
 
-  // Удаляем старые миниатюры
   const oldPictures = container.querySelectorAll('.picture');
   oldPictures.forEach((el) => el.remove());
 
-  // Добавляем новые
   photos.forEach((photo) => {
     const clone = template.cloneNode(true);
     const link = clone.querySelector('.picture');
@@ -28,6 +24,6 @@ export const renderThumbnails = (photos) => {
       openFullPicture(photo);
     });
 
-    container.append(clone); // ← правильно, без мусора
+    container.append(clone);
   });
 };
