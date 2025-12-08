@@ -65,9 +65,8 @@ const hashtagErrorMessage = () => {
 const closeUploadForm = () => {
   uploadOverlay.classList.add('hidden');
   body.classList.remove('modal-open');
-  uploadForm.reset();       // ← сброс всех полей формы (хэштеги, комментарий и т.д.)
-  uploadInput.value = '';   // ← критически важно: сброс input[type="file"]
-  // eslint-disable-next-line no-use-before-define
+  uploadForm.reset();
+  uploadInput.value = '';
   document.removeEventListener('keydown', onEscKeydown);
 };
 
@@ -81,17 +80,46 @@ const onEscKeydown = (evt) => {
   }
 };
 
-// === Открытие формы + валидация ===
+// === Открытие формы + валидация + МАСШТАБ ===
 const onUploadInputChange = () => {
   if (uploadInput.files.length === 0) {return;}
 
   uploadOverlay.classList.remove('hidden');
   body.classList.add('modal-open');
 
+  // === НОВОЕ: МАСШТАБИРОВАНИЕ ===
+  const scaleSmaller = uploadOverlay.querySelector('.scale__control--smaller');
+  const scaleBigger = uploadOverlay.querySelector('.scale__control--bigger');
+  const scaleValue = uploadOverlay.querySelector('.scale__control--value');
+  const previewImg = uploadOverlay.querySelector('.img-upload__preview img');
+
+  let scale = 100; // %
+
+  const updateScale = () => {
+    scaleValue.value = `${scale}%`;
+    previewImg.style.transform = `scale(${scale / 100})`;
+  };
+
+  scaleSmaller.addEventListener('click', () => {
+    if (scale > 25) {
+      scale -= 25;
+      updateScale();
+    }
+  });
+
+  scaleBigger.addEventListener('click', () => {
+    if (scale < 100) {
+      scale += 25;
+      updateScale();
+    }
+  });
+
+  updateScale(); // устанавливаем 100% при открытии
+
+  // === Остальной код без изменений ===
   uploadCancel.addEventListener('click', closeUploadForm);
   document.addEventListener('keydown', onEscKeydown);
 
-  // Инициализация Pristine
   const pristine = new Pristine(uploadForm, {
     classTo: 'img-upload__field-wrapper',
     errorTextParent: 'img-upload__field-wrapper',
@@ -107,23 +135,19 @@ const onUploadInputChange = () => {
     submitButton.disabled = !pristine.validate();
   };
 
-  // Реакция на ввод
   hashtagsField.addEventListener('input', updateSubmitButton);
   commentsField.addEventListener('input', updateSubmitButton);
 
-  // ✅ ГАРАНТИЯ: валидация при попытке отправки
   uploadForm.addEventListener('submit', (evt) => {
     if (!pristine.validate()) {
-      evt.preventDefault(); // ← не даём отправить, если есть ошибки
+      evt.preventDefault();
     }
   });
 
-  // Первичное состояние кнопки
   updateSubmitButton();
 
-  // Закрытие
-  uploadCancel.addEventListener('click', closeUploadForm);
-  document.addEventListener('keydown', onEscKeydown);
+  // Обработчики закрытия (можно оставить один раз)
+  // uploadCancel и Esc уже добавлены выше — повторно не нужно
 };
 
 const initUploadForm = () => {
