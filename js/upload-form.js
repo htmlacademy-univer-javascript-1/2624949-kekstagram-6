@@ -1,5 +1,4 @@
-// js/upload-form.js
-
+/* eslint-disable no-use-before-define */
 const uploadInput = document.querySelector('#upload-file');
 const uploadOverlay = document.querySelector('.img-upload__overlay');
 const uploadForm = uploadOverlay.querySelector('.img-upload__form');
@@ -12,7 +11,6 @@ const MAX_COMMENT_LENGTH = 140;
 const MAX_HASHTAG_COUNT = 5;
 const MAX_HASHTAG_LENGTH = 20;
 
-// === Валидаторы ===
 const validateComment = (value) => {
   const text = value.trim();
   return text.length === 0 || text.length <= MAX_COMMENT_LENGTH;
@@ -61,7 +59,6 @@ const hashtagErrorMessage = () => {
   return 'Неверный формат хэш-тега';
 };
 
-// === Закрытие ===
 const closeUploadForm = () => {
   uploadOverlay.classList.add('hidden');
   body.classList.remove('modal-open');
@@ -70,7 +67,6 @@ const closeUploadForm = () => {
   document.removeEventListener('keydown', onEscKeydown);
 };
 
-// === Обработка Esc ===
 const onEscKeydown = (evt) => {
   const active = document.activeElement;
   const isFieldFocused = active === hashtagsField || active === commentsField;
@@ -80,20 +76,18 @@ const onEscKeydown = (evt) => {
   }
 };
 
-// === Открытие формы + валидация + МАСШТАБ ===
 const onUploadInputChange = () => {
   if (uploadInput.files.length === 0) {return;}
 
   uploadOverlay.classList.remove('hidden');
   body.classList.add('modal-open');
 
-  // === НОВОЕ: МАСШТАБИРОВАНИЕ ===
   const scaleSmaller = uploadOverlay.querySelector('.scale__control--smaller');
   const scaleBigger = uploadOverlay.querySelector('.scale__control--bigger');
   const scaleValue = uploadOverlay.querySelector('.scale__control--value');
   const previewImg = uploadOverlay.querySelector('.img-upload__preview img');
 
-  let scale = 100; // %
+  let scale = 100;
 
   const updateScale = () => {
     scaleValue.value = `${scale}%`;
@@ -114,9 +108,71 @@ const onUploadInputChange = () => {
     }
   });
 
-  updateScale(); // устанавливаем 100% при открытии
+  updateScale();
+  const effectLevelField = uploadOverlay.querySelector('.effect-level__value');
+  const effectLevelContainer = uploadOverlay.querySelector('.img-upload__effect-level');
+  const slider = uploadOverlay.querySelector('.effect-level__slider');
+  const effectsList = uploadOverlay.querySelector('.effects__list');
 
-  // === Остальной код без изменений ===
+  if (slider.noUiSlider) {
+    slider.noUiSlider.destroy();
+  }
+
+  const effectConfigs = {
+    none: { range: [0, 1], step: 1, start: 0, filter: () => '', hidden: true },
+    chrome: { range: [0, 1], step: 0.1, start: 1, filter: (v) => `grayscale(${v})`, hidden: false },
+    sepia: { range: [0, 1], step: 0.1, start: 1, filter: (v) => `sepia(${v})`, hidden: false },
+    marvin: { range: [0, 1], step: 0.01, start: 1, filter: (v) => `invert(${v * 100}%)`, hidden: false },
+    phobos: { range: [0, 1], step: 0.01, start: 1, filter: (v) => `blur(${v * 3}px)`, hidden: false },
+    heat: { range: [0, 1], step: 0.01, start: 1, filter: (v) => `brightness(${1 + v * 2})`, hidden: false }
+  };
+
+  let currentEffect = 'none';
+
+  const updateEffect = () => {
+    const config = effectConfigs[currentEffect];
+
+    if (slider.noUiSlider) {
+      slider.noUiSlider.destroy();
+    }
+
+    if (config.hidden) {
+      effectLevelContainer.classList.add('hidden');
+      previewImg.style.filter = '';
+      effectLevelField.value = '';
+      return;
+    }
+
+    effectLevelContainer.classList.remove('hidden');
+
+    window.noUiSlider.create(slider, {
+      range: { min: config.range[0], max: config.range[1] },
+      start: config.start,
+      step: config.step,
+      connect: 'lower'
+    });
+
+    const setValue = (value) => {
+      previewImg.style.filter = config.filter(value);
+      effectLevelField.value = value;
+    };
+
+    setValue(config.start);
+
+    slider.noUiSlider.on('update', (values) => {
+      setValue(parseFloat(values[0]));
+    });
+  };
+
+  effectsList.addEventListener('change', (evt) => {
+    if (evt.target.name === 'effect' && evt.target.checked) {
+      currentEffect = evt.target.value;
+      updateEffect();
+    }
+  });
+
+  updateEffect();
+
   uploadCancel.addEventListener('click', closeUploadForm);
   document.addEventListener('keydown', onEscKeydown);
 
@@ -146,8 +202,6 @@ const onUploadInputChange = () => {
 
   updateSubmitButton();
 
-  // Обработчики закрытия (можно оставить один раз)
-  // uploadCancel и Esc уже добавлены выше — повторно не нужно
 };
 
 const initUploadForm = () => {
