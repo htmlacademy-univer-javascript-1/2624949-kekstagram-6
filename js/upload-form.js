@@ -1,4 +1,6 @@
 /* eslint-disable no-use-before-define */
+import { sendData } from './api.js';
+
 const uploadInput = document.querySelector('#upload-file');
 const uploadOverlay = document.querySelector('.img-upload__overlay');
 const uploadForm = uploadOverlay.querySelector('.img-upload__form');
@@ -86,6 +88,11 @@ const onUploadInputChange = () => {
   const scaleBigger = uploadOverlay.querySelector('.scale__control--bigger');
   const scaleValue = uploadOverlay.querySelector('.scale__control--value');
   const previewImg = uploadOverlay.querySelector('.img-upload__preview img');
+
+  const file = uploadInput.files[0];
+  if (file) {
+    previewImg.src = URL.createObjectURL(file);
+  }
 
   let scale = 100;
 
@@ -194,10 +201,53 @@ const onUploadInputChange = () => {
   hashtagsField.addEventListener('input', updateSubmitButton);
   commentsField.addEventListener('input', updateSubmitButton);
 
+  const showMessage = (template) => {
+    const messageElement = template.cloneNode(true);
+    document.body.append(messageElement);
+
+    const closeMessage = () => {
+      messageElement.remove();
+      document.removeEventListener('keydown', onMessageEscKeydown);
+    };
+
+    const onMessageEscKeydown = (evt) => {
+      if (evt.key === 'Escape') {
+        closeMessage();
+      }
+    };
+
+    messageElement.addEventListener('click', (evt) => {
+      if (evt.target.classList.contains('success') || evt.target.classList.contains('error') || evt.target.classList.contains('success__button') || evt.target.classList.contains('error__button')) {
+        closeMessage();
+      }
+    });
+
+    document.addEventListener('keydown', onMessageEscKeydown);
+  };
+
   uploadForm.addEventListener('submit', (evt) => {
+    evt.preventDefault();
+
     if (!pristine.validate()) {
-      evt.preventDefault();
+      return;
     }
+
+    const formData = new FormData(uploadForm);
+    submitButton.disabled = true;
+
+    sendData(formData)
+      .then(() => {
+        closeUploadForm();
+        const successTemplate = document.querySelector('#success').content.querySelector('.success');
+        showMessage(successTemplate);
+      })
+      .catch(() => {
+        const errorTemplate = document.querySelector('#error').content.querySelector('.error');
+        showMessage(errorTemplate);
+      })
+      .finally(() => {
+        submitButton.disabled = false;
+      });
   });
 
   updateSubmitButton();
