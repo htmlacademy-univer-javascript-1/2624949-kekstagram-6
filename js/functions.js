@@ -28,3 +28,27 @@ findPalindrom('ДовОд'); // true
 findPalindrom('Кекс');  // false
 // Это палиндром
 findPalindrom('Лёша на полке клопа нашёл '); // true
+
+
+const checkTime = function(dayStart, dayEnd, meetingStart, meetingDuration){
+
+  let dayStartInMin = 0;
+  let dayEndInMin = 0;
+  let meetingStartInMin = 0;
+
+  dayStart = dayStart.split(':');
+  dayStartInMin += Number(dayStart[0]) * 60 + Number(dayStart[1]);
+
+  dayEnd = dayEnd.split(':');
+  dayEndInMin += Number(dayEnd[0]) * 60 + Number(dayEnd[1]);
+
+  meetingStart = meetingStart.split(':');
+  meetingStartInMin += Number(meetingStart[0]) * 60 + Number(meetingStart[1]);
+
+  if (dayStartInMin <= meetingStartInMin && meetingStartInMin <= dayEndInMin && ((dayEndInMin - meetingStartInMin) >= meetingDuration)){
+    return true;
+  }
+  return false;
+};
+
+checkTime('8:0', '10:0', '8:0', 120);
