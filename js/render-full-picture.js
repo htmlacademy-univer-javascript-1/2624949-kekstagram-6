@@ -1,5 +1,7 @@
 import { isEscapeKey } from './util.js';
 
+const STEP = 5;
+
 const fullPicture = document.querySelector('.big-picture');
 const closeButton = fullPicture.querySelector('#picture-cancel');
 const socialComments = fullPicture.querySelector('.social__comments');
@@ -11,7 +13,6 @@ const body = document.body;
 
 let currentComments = [];
 let shownCount = 0;
-const STEP = 5;
 
 const renderComments = () => {
   socialComments.innerHTML = '';
