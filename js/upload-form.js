@@ -2,6 +2,7 @@
 import { sendData } from './api.js';
 import { isEscapeKey } from './util.js';
 
+const FILE_TYPES = ['jpg', 'jpeg', 'png'];
 const MAX_COMMENT_LENGTH = 140;
 const MAX_HASHTAG_COUNT = 5;
 const MAX_HASHTAG_LENGTH = 20;
@@ -240,14 +241,22 @@ uploadForm.addEventListener('submit', (evt) => {
 const onUploadInputChange = () => {
   if (uploadInput.files.length === 0) {return;}
 
+  const file = uploadInput.files[0];
+  const fileName = file.name.toLowerCase();
+  const matches = FILE_TYPES.some((it) => fileName.endsWith(it));
+
+  if (matches) {
+    const url = URL.createObjectURL(file);
+    previewImg.src = url;
+    const effectsPreviews = uploadForm.querySelectorAll('.effects__preview');
+    effectsPreviews.forEach((preview) => {
+      preview.style.backgroundImage = `url(${url})`;
+    });
+  }
+
   uploadOverlay.classList.remove('hidden');
   body.classList.add('modal-open');
   document.addEventListener('keydown', onEscKeydown);
-
-  const file = uploadInput.files[0];
-  if (file) {
-    previewImg.src = URL.createObjectURL(file);
-  }
 
   // Reset state
   scale = 100;
