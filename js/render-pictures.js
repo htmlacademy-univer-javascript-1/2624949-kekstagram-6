@@ -16,8 +16,8 @@ export const renderThumbnails = (photos) => {
 
     img.src = photo.url;
     img.alt = photo.description || 'Фотография';
-    comments.textContent = `${photo.comments.length} коммент.`;
-    likes.textContent = `${photo.likes} лайк.`;
+    comments.textContent = `${photo.comments.length}`;
+    likes.textContent = `${photo.likes}`;
 
     link.addEventListener('click', (evt) => {
       evt.preventDefault();

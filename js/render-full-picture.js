@@ -33,7 +33,7 @@ const renderComments = () => {
   socialComments.append(fragment);
 
   const totalCount = currentComments.length;
-  commentCountBlock.innerHTML = `${shownCount} из <span class="comments-count">${totalCount}</span> комментариев`;
+  commentCountBlock.innerHTML = `<span class="social__comment-shown-count">${toRender.length}</span> из <span class="social__comment-total-count">${totalCount}</span> комментариев`;
   commentCountBlock.classList.remove('hidden');
 
   if (shownCount >= totalCount) {
