@@ -1,3 +1,5 @@
+import { isEscapeKey } from './util.js';
+
 const fullPicture = document.querySelector('.big-picture');
 const closeButton = fullPicture.querySelector('#picture-cancel');
 const socialComments = fullPicture.querySelector('.social__comments');
@@ -76,7 +78,7 @@ const closeFullPicture = () => {
 closeButton.addEventListener('click', closeFullPicture);
 
 document.addEventListener('keydown', (evt) => {
-  if (evt.key === 'Escape' && !fullPicture.classList.contains('hidden')) {
+  if (isEscapeKey(evt) && !fullPicture.classList.contains('hidden')) {
     evt.preventDefault();
     closeFullPicture();
   }

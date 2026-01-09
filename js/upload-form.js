@@ -1,5 +1,6 @@
 /* eslint-disable no-use-before-define */
 import { sendData } from './api.js';
+import { isEscapeKey } from './util.js';
 
 const uploadInput = document.querySelector('#upload-file');
 const uploadOverlay = document.querySelector('.img-upload__overlay');
@@ -72,7 +73,7 @@ const closeUploadForm = () => {
 const onEscKeydown = (evt) => {
   const active = document.activeElement;
   const isFieldFocused = active === hashtagsField || active === commentsField;
-  if (evt.key === 'Escape' && !isFieldFocused) {
+  if (isEscapeKey(evt) && !isFieldFocused) {
     evt.preventDefault();
     closeUploadForm();
   }
@@ -211,7 +212,7 @@ const onUploadInputChange = () => {
     };
 
     const onMessageEscKeydown = (evt) => {
-      if (evt.key === 'Escape') {
+      if (isEscapeKey(evt)) {
         closeMessage();
       }
     };
