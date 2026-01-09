@@ -87,7 +87,11 @@ pristine.addValidator(hashtagsField, validateHashtags, hashtagErrorMessage, 2, t
 pristine.addValidator(commentsField, validateComment, commentErrorMessage, 2, true);
 
 const updateSubmitButton = () => {
-  submitButton.disabled = !pristine.validate();
+  const isValid = pristine.validate();
+  submitButton.disabled = !isValid;
+  if (isValid) {
+    document.querySelectorAll('.img-upload__error-text').forEach((element) => element.remove());
+  }
 };
 
 const closeUploadForm = () => {
@@ -114,12 +118,12 @@ const updateScale = () => {
 };
 
 const effectConfigs = {
-  none: { range: [0, 1], step: 1, start: 0, filter: () => '', hidden: true },
-  chrome: { range: [0, 1], step: 0.1, start: 1, filter: (v) => `grayscale(${v})`, hidden: false },
-  sepia: { range: [0, 1], step: 0.1, start: 1, filter: (v) => `sepia(${v})`, hidden: false },
-  marvin: { range: [0, 1], step: 0.01, start: 1, filter: (v) => `invert(${v * 100}%)`, hidden: false },
-  phobos: { range: [0, 1], step: 0.01, start: 1, filter: (v) => `blur(${v * 3}px)`, hidden: false },
-  heat: { range: [0, 1], step: 0.01, start: 1, filter: (v) => `brightness(${1 + v * 2})`, hidden: false }
+  none: { range: { min: 0, max: 1 }, step: 1, start: 1, filter: () => '', hidden: true },
+  chrome: { range: { min: 0, max: 1 }, step: 0.1, start: 1, filter: (v) => `grayscale(${v})`, hidden: false },
+  sepia: { range: { min: 0, max: 1 }, step: 0.1, start: 1, filter: (v) => `sepia(${v})`, hidden: false },
+  marvin: { range: { min: 0, max: 100 }, step: 1, start: 100, filter: (v) => `invert(${v}%)`, hidden: false },
+  phobos: { range: { min: 0, max: 3 }, step: 0.1, start: 3, filter: (v) => `blur(${v}px)`, hidden: false },
+  heat: { range: { min: 1, max: 3 }, step: 0.1, start: 3, filter: (v) => `brightness(${v})`, hidden: false }
 };
 
 const updateEffect = () => {
@@ -139,7 +143,7 @@ const updateEffect = () => {
   effectLevelContainer.classList.remove('hidden');
 
   window.noUiSlider.create(slider, {
-    range: { min: config.range[0], max: config.range[1] },
+    range: config.range,
     start: config.start,
     step: config.step,
     connect: 'lower'
