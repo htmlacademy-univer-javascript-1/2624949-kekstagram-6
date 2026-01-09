@@ -167,11 +167,12 @@ const showMessage = (template) => {
 
   const closeMessage = () => {
     messageElement.remove();
-    document.removeEventListener('keydown', onMessageEscKeydown);
+    document.removeEventListener('keydown', onMessageEscKeydown, true);
   };
 
   const onMessageEscKeydown = (evt) => {
     if (isEscapeKey(evt)) {
+      evt.stopPropagation();
       closeMessage();
     }
   };
@@ -182,7 +183,7 @@ const showMessage = (template) => {
     }
   });
 
-  document.addEventListener('keydown', onMessageEscKeydown);
+  document.addEventListener('keydown', onMessageEscKeydown, true);
 };
 
 // Event Listeners
@@ -223,10 +224,12 @@ uploadForm.addEventListener('submit', (evt) => {
 
   sendData(formData)
     .then(() => {
+      console.log('sendData success');
       closeUploadForm();
       showMessage(successTemplate);
     })
-    .catch(() => {
+    .catch((err) => {
+      console.log('sendData fail', err);
       showMessage(errorTemplate);
     })
     .finally(() => {
