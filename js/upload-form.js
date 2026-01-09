@@ -90,7 +90,7 @@ const updateSubmitButton = () => {
   const isValid = pristine.validate();
   submitButton.disabled = !isValid;
   if (isValid) {
-    document.querySelectorAll('.img-upload__error-text').forEach((element) => element.remove());
+    pristine.reset();
   }
 };
 
