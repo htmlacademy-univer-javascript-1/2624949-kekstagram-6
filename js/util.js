@@ -6,24 +6,24 @@ export const getRandomInteger = (min, max) => {
 
 export const getRandomArrayElement = (elements) => elements[getRandomInteger(0, elements.length - 1)];
 
-export function debounce(callback, timeoutDelay = 500) {
+export const isEscapeKey = (evt) => evt.key === 'Escape';
+
+export const showDataLoadError = (message) => {
+  const errorMessage = document.createElement('div');
+  errorMessage.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 20px; background: #ff6b6b; color: white; border-radius: 5px; font-size: 16px; z-index: 1000;';
+  errorMessage.classList.add('data-error');
+  errorMessage.textContent = message;
+  document.body.append(errorMessage);
+  setTimeout(() => {
+    errorMessage.remove();
+  }, 5000);
+};
+
+export const debounce = (callback, timeoutDelay = 500) => {
   let timeoutId;
 
   return (...rest) => {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(() => callback.apply(this, rest), timeoutDelay);
   };
-}
-
-export function throttle(callback, delayBetweenFrames) {
-  let lastTime = 0;
-
-  return (...rest) => {
-    const now = new Date();
-
-    if (now - lastTime >= delayBetweenFrames) {
-      callback.apply(this, rest);
-      lastTime = now;
-    }
-  };
-}
+};

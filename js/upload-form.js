@@ -1,17 +1,34 @@
 /* eslint-disable no-use-before-define */
 import { sendData } from './api.js';
+import { isEscapeKey } from './util.js';
 
-const uploadInput = document.querySelector('#upload-file');
-const uploadOverlay = document.querySelector('.img-upload__overlay');
-const uploadForm = uploadOverlay.querySelector('.img-upload__form');
-const uploadCancel = uploadOverlay.querySelector('#upload-cancel');
-const hashtagsField = uploadOverlay.querySelector('.text__hashtags');
-const commentsField = uploadOverlay.querySelector('.text__description');
-const body = document.body;
-
+const FILE_TYPES = ['jpg', 'jpeg', 'png'];
 const MAX_COMMENT_LENGTH = 140;
 const MAX_HASHTAG_COUNT = 5;
 const MAX_HASHTAG_LENGTH = 20;
+
+const uploadInput = document.querySelector('#upload-file');
+const uploadOverlay = document.querySelector('.img-upload__overlay');
+const uploadForm = document.querySelector('.img-upload__form');
+const uploadCancel = uploadOverlay.querySelector('#upload-cancel');
+const hashtagsField = uploadOverlay.querySelector('.text__hashtags');
+const commentsField = uploadOverlay.querySelector('.text__description');
+const scaleSmaller = uploadOverlay.querySelector('.scale__control--smaller');
+const scaleBigger = uploadOverlay.querySelector('.scale__control--bigger');
+const scaleValue = uploadOverlay.querySelector('.scale__control--value');
+const previewImg = uploadOverlay.querySelector('.img-upload__preview img');
+const effectLevelField = uploadOverlay.querySelector('.effect-level__value');
+const effectLevelContainer = uploadOverlay.querySelector('.img-upload__effect-level');
+const slider = uploadOverlay.querySelector('.effect-level__slider');
+const effectsList = uploadOverlay.querySelector('.effects__list');
+const submitButton = uploadForm.querySelector('.img-upload__submit');
+const successTemplate = document.querySelector('#success').content.querySelector('.success');
+const errorTemplate = document.querySelector('#error').content.querySelector('.error');
+
+const body = document.body;
+
+let scale = 100;
+let currentEffect = 'none';
 
 const validateComment = (value) => {
   const text = value.trim();
@@ -61,10 +78,28 @@ const hashtagErrorMessage = () => {
   return 'Неверный формат хэш-тега';
 };
 
+const pristine = new Pristine(uploadForm, {
+  classTo: 'img-upload__field-wrapper',
+  errorTextParent: 'img-upload__field-wrapper',
+  errorTextClass: 'img-upload__error-text'
+});
+
+pristine.addValidator(hashtagsField, validateHashtags, hashtagErrorMessage, 2, true);
+pristine.addValidator(commentsField, validateComment, commentErrorMessage, 2, true);
+
+const updateSubmitButton = () => {
+  const isValid = pristine.validate();
+  submitButton.disabled = !isValid;
+  if (isValid) {
+    pristine.reset();
+  }
+};
+
 const closeUploadForm = () => {
   uploadOverlay.classList.add('hidden');
   body.classList.remove('modal-open');
   uploadForm.reset();
+  pristine.reset();
   uploadInput.value = '';
   document.removeEventListener('keydown', onEscKeydown);
 };
@@ -72,186 +107,168 @@ const closeUploadForm = () => {
 const onEscKeydown = (evt) => {
   const active = document.activeElement;
   const isFieldFocused = active === hashtagsField || active === commentsField;
-  if (evt.key === 'Escape' && !isFieldFocused) {
+  if (isEscapeKey(evt) && !isFieldFocused) {
     evt.preventDefault();
     closeUploadForm();
   }
 };
 
-const onUploadInputChange = () => {
-  if (uploadInput.files.length === 0) {return;}
+const updateScale = () => {
+  scaleValue.value = `${scale}%`;
+  previewImg.style.transform = `scale(${scale / 100})`;
+};
 
-  uploadOverlay.classList.remove('hidden');
-  body.classList.add('modal-open');
+const effectConfigs = {
+  none: { range: { min: 0, max: 1 }, step: 1, start: 1, filter: () => '', hidden: true },
+  chrome: { range: { min: 0, max: 1 }, step: 0.1, start: 1, filter: (v) => `grayscale(${v})`, hidden: false },
+  sepia: { range: { min: 0, max: 1 }, step: 0.1, start: 1, filter: (v) => `sepia(${v})`, hidden: false },
+  marvin: { range: { min: 0, max: 100 }, step: 1, start: 100, filter: (v) => `invert(${v}%)`, hidden: false },
+  phobos: { range: { min: 0, max: 3 }, step: 0.1, start: 3, filter: (v) => `blur(${v}px)`, hidden: false },
+  heat: { range: { min: 1, max: 3 }, step: 0.1, start: 3, filter: (v) => `brightness(${v})`, hidden: false }
+};
 
-  const scaleSmaller = uploadOverlay.querySelector('.scale__control--smaller');
-  const scaleBigger = uploadOverlay.querySelector('.scale__control--bigger');
-  const scaleValue = uploadOverlay.querySelector('.scale__control--value');
-  const previewImg = uploadOverlay.querySelector('.img-upload__preview img');
-
-  const file = uploadInput.files[0];
-  if (file) {
-    previewImg.src = URL.createObjectURL(file);
-  }
-
-  let scale = 100;
-
-  const updateScale = () => {
-    scaleValue.value = `${scale}%`;
-    previewImg.style.transform = `scale(${scale / 100})`;
-  };
-
-  scaleSmaller.addEventListener('click', () => {
-    if (scale > 25) {
-      scale -= 25;
-      updateScale();
-    }
-  });
-
-  scaleBigger.addEventListener('click', () => {
-    if (scale < 100) {
-      scale += 25;
-      updateScale();
-    }
-  });
-
-  updateScale();
-  const effectLevelField = uploadOverlay.querySelector('.effect-level__value');
-  const effectLevelContainer = uploadOverlay.querySelector('.img-upload__effect-level');
-  const slider = uploadOverlay.querySelector('.effect-level__slider');
-  const effectsList = uploadOverlay.querySelector('.effects__list');
+const updateEffect = () => {
+  const config = effectConfigs[currentEffect];
 
   if (slider.noUiSlider) {
     slider.noUiSlider.destroy();
   }
 
-  const effectConfigs = {
-    none: { range: [0, 1], step: 1, start: 0, filter: () => '', hidden: true },
-    chrome: { range: [0, 1], step: 0.1, start: 1, filter: (v) => `grayscale(${v})`, hidden: false },
-    sepia: { range: [0, 1], step: 0.1, start: 1, filter: (v) => `sepia(${v})`, hidden: false },
-    marvin: { range: [0, 1], step: 0.01, start: 1, filter: (v) => `invert(${v * 100}%)`, hidden: false },
-    phobos: { range: [0, 1], step: 0.01, start: 1, filter: (v) => `blur(${v * 3}px)`, hidden: false },
-    heat: { range: [0, 1], step: 0.01, start: 1, filter: (v) => `brightness(${1 + v * 2})`, hidden: false }
+  if (config.hidden) {
+    effectLevelContainer.classList.add('hidden');
+    previewImg.style.filter = '';
+    effectLevelField.value = '';
+    return;
+  }
+
+  effectLevelContainer.classList.remove('hidden');
+
+  window.noUiSlider.create(slider, {
+    range: config.range,
+    start: config.start,
+    step: config.step,
+    connect: 'lower'
+  });
+
+  const setValue = (value) => {
+    previewImg.style.filter = config.filter(value);
+    effectLevelField.value = value;
   };
 
-  let currentEffect = 'none';
+  setValue(config.start);
 
-  const updateEffect = () => {
-    const config = effectConfigs[currentEffect];
+  slider.noUiSlider.on('update', (values) => {
+    setValue(parseFloat(values[0]));
+  });
+};
 
-    if (slider.noUiSlider) {
-      slider.noUiSlider.destroy();
-    }
+const showMessage = (template) => {
+  const messageElement = template.cloneNode(true);
+  document.body.append(messageElement);
 
-    if (config.hidden) {
-      effectLevelContainer.classList.add('hidden');
-      previewImg.style.filter = '';
-      effectLevelField.value = '';
-      return;
-    }
-
-    effectLevelContainer.classList.remove('hidden');
-
-    window.noUiSlider.create(slider, {
-      range: { min: config.range[0], max: config.range[1] },
-      start: config.start,
-      step: config.step,
-      connect: 'lower'
-    });
-
-    const setValue = (value) => {
-      previewImg.style.filter = config.filter(value);
-      effectLevelField.value = value;
-    };
-
-    setValue(config.start);
-
-    slider.noUiSlider.on('update', (values) => {
-      setValue(parseFloat(values[0]));
-    });
+  const closeMessage = () => {
+    messageElement.remove();
+    document.removeEventListener('keydown', onMessageEscKeydown, true);
   };
 
-  effectsList.addEventListener('change', (evt) => {
-    if (evt.target.name === 'effect' && evt.target.checked) {
-      currentEffect = evt.target.value;
-      updateEffect();
+  const onMessageEscKeydown = (evt) => {
+    if (isEscapeKey(evt)) {
+      evt.stopPropagation();
+      closeMessage();
+    }
+  };
+
+  messageElement.addEventListener('click', (evt) => {
+    if (evt.target.classList.contains('success') || evt.target.classList.contains('error') || evt.target.classList.contains('success__button') || evt.target.classList.contains('error__button')) {
+      closeMessage();
     }
   });
 
-  updateEffect();
+  document.addEventListener('keydown', onMessageEscKeydown, true);
+};
 
-  uploadCancel.addEventListener('click', closeUploadForm);
+// Event Listeners
+scaleSmaller.addEventListener('click', () => {
+  if (scale > 25) {
+    scale -= 25;
+    updateScale();
+  }
+});
+
+scaleBigger.addEventListener('click', () => {
+  if (scale < 100) {
+    scale += 25;
+    updateScale();
+  }
+});
+
+effectsList.addEventListener('change', (evt) => {
+  if (evt.target.name === 'effect' && evt.target.checked) {
+    currentEffect = evt.target.value;
+    updateEffect();
+  }
+});
+
+uploadCancel.addEventListener('click', closeUploadForm);
+hashtagsField.addEventListener('input', updateSubmitButton);
+commentsField.addEventListener('input', updateSubmitButton);
+
+uploadForm.addEventListener('submit', (evt) => {
+  evt.preventDefault();
+
+  if (!pristine.validate()) {
+    return;
+  }
+
+  const formData = new FormData(uploadForm);
+  submitButton.disabled = true;
+
+  sendData(formData)
+    .then(() => {
+      console.log('sendData success');
+      closeUploadForm();
+      showMessage(successTemplate);
+    })
+    .catch((err) => {
+      console.log('sendData fail', err);
+      showMessage(errorTemplate);
+    })
+    .finally(() => {
+      submitButton.disabled = false;
+    });
+});
+
+const onUploadInputChange = () => {
+  if (uploadInput.files.length === 0) {return;}
+
+  const file = uploadInput.files[0];
+  const fileName = file.name.toLowerCase();
+  const matches = FILE_TYPES.some((it) => fileName.endsWith(it));
+
+  if (matches) {
+    const url = URL.createObjectURL(file);
+    previewImg.src = url;
+    const effectsPreviews = uploadForm.querySelectorAll('.effects__preview');
+    effectsPreviews.forEach((preview) => {
+      preview.style.backgroundImage = `url(${url})`;
+    });
+  }
+
+  uploadOverlay.classList.remove('hidden');
+  body.classList.add('modal-open');
   document.addEventListener('keydown', onEscKeydown);
 
-  const pristine = new Pristine(uploadForm, {
-    classTo: 'img-upload__field-wrapper',
-    errorTextParent: 'img-upload__field-wrapper',
-    errorTextClass: 'img-upload__error-text'
-  });
+  // Reset state
+  scale = 100;
+  updateScale();
 
-  pristine.addValidator(hashtagsField, validateHashtags, hashtagErrorMessage, 2, true);
-  pristine.addValidator(commentsField, validateComment, commentErrorMessage, 2, true);
-
-  const submitButton = uploadForm.querySelector('.img-upload__submit');
-
-  const updateSubmitButton = () => {
-    submitButton.disabled = !pristine.validate();
-  };
-
-  hashtagsField.addEventListener('input', updateSubmitButton);
-  commentsField.addEventListener('input', updateSubmitButton);
-
-  const showMessage = (template) => {
-    const messageElement = template.cloneNode(true);
-    document.body.append(messageElement);
-
-    const closeMessage = () => {
-      messageElement.remove();
-      document.removeEventListener('keydown', onMessageEscKeydown);
-    };
-
-    const onMessageEscKeydown = (evt) => {
-      if (evt.key === 'Escape') {
-        closeMessage();
-      }
-    };
-
-    messageElement.addEventListener('click', (evt) => {
-      if (evt.target.classList.contains('success') || evt.target.classList.contains('error') || evt.target.classList.contains('success__button') || evt.target.classList.contains('error__button')) {
-        closeMessage();
-      }
-    });
-
-    document.addEventListener('keydown', onMessageEscKeydown);
-  };
-
-  uploadForm.addEventListener('submit', (evt) => {
-    evt.preventDefault();
-
-    if (!pristine.validate()) {
-      return;
-    }
-
-    const formData = new FormData(uploadForm);
-    submitButton.disabled = true;
-
-    sendData(formData)
-      .then(() => {
-        closeUploadForm();
-        const successTemplate = document.querySelector('#success').content.querySelector('.success');
-        showMessage(successTemplate);
-      })
-      .catch(() => {
-        const errorTemplate = document.querySelector('#error').content.querySelector('.error');
-        showMessage(errorTemplate);
-      })
-      .finally(() => {
-        submitButton.disabled = false;
-      });
-  });
+  currentEffect = 'none';
+  if (slider.noUiSlider) {
+    slider.noUiSlider.destroy();
+  }
+  updateEffect();
 
   updateSubmitButton();
-
 };
 
 const initUploadForm = () => {

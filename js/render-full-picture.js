@@ -1,3 +1,7 @@
+import { isEscapeKey } from './util.js';
+
+const STEP = 5;
+
 const fullPicture = document.querySelector('.big-picture');
 const closeButton = fullPicture.querySelector('#picture-cancel');
 const socialComments = fullPicture.querySelector('.social__comments');
@@ -9,7 +13,6 @@ const body = document.body;
 
 let currentComments = [];
 let shownCount = 0;
-const STEP = 5;
 
 const renderComments = () => {
   socialComments.innerHTML = '';
@@ -30,7 +33,7 @@ const renderComments = () => {
   socialComments.append(fragment);
 
   const totalCount = currentComments.length;
-  commentCountBlock.innerHTML = `${shownCount} из <span class="comments-count">${totalCount}</span> комментариев`;
+  commentCountBlock.innerHTML = `<span class="social__comment-shown-count">${toRender.length}</span> из <span class="social__comment-total-count">${totalCount}</span> комментариев`;
   commentCountBlock.classList.remove('hidden');
 
   if (shownCount >= totalCount) {
@@ -76,7 +79,7 @@ const closeFullPicture = () => {
 closeButton.addEventListener('click', closeFullPicture);
 
 document.addEventListener('keydown', (evt) => {
-  if (evt.key === 'Escape' && !fullPicture.classList.contains('hidden')) {
+  if (isEscapeKey(evt) && !fullPicture.classList.contains('hidden')) {
     evt.preventDefault();
     closeFullPicture();
   }
